@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>redBus - Bus Booking System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+</head>
+<style>
+    body { font-family: 'Inter', sans-serif; }
+    .hero-section { background: linear-gradient(to bottom right, #E54D42, #D6392D); }
+    .sunset {
+        position: absolute;
+        right: 0;
+        top: 0;
+        width: 200px;
+        height: 200px;
+        background: #F9D67A;
+        border-radius: 50%;
+        opacity: 0.8;
+    }
+    .dropdown-content {
+        display: none;
+        position: absolute;
+        background-color: white;
+        min-width: 200px;
+        box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+        z-index: 50;
+        border-radius: 8px;
+    }
+    .dropdown-content.show { display: block; }
+    .seat { cursor: pointer; transition: all 0.3s; }
+    .seat:hover { transform: scale(1.1); }
+    .seat.selected { background-color: #4CAF50; }
+    .seat.booked { background-color: #ff4444; pointer-events: none; }
+</style>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center">
+                    <img src="https://www.redbus.in/i/59538b35953097248522a65b4b79650e.png" alt="redBus" class="h-8">
+                    <div class="ml-10 flex space-x-4">
+                        <a href="#" class="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium">Bus Tickets</a>
+                        <a href="#" class="text-gray-700 px-4 py-2 rounded-md text-sm font-medium">Train Tickets</a>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="#" class="text-gray-700"><i class="bi bi-headphones"></i> Help</a>
+                    <div class="relative">
+                        <button class="flex items-center text-gray-700" id="langDropdown">
+                            <span>English</span>
+                            <i class="bi bi-chevron-down ml-1"></i>
+                        </button>
+                    </div>
+                    <div class="relative">
+                        <button class="text-gray-700" id="accountDropdown">
+                            <i class="bi bi-person"></i> Account
+                        </button>
+                        <div class="dropdown-content" id="accountMenu">
+                            <a href="#" class="block px-4 py-2 hover:bg-gray-100"><i class="bi bi-box-arrow-in-right"></i> Login/Signup</a>
+                            <a href="#" class="block px-4 py-2 hover:bg-gray-100"><i class="bi bi-ticket-perforated"></i> Show My Ticket</a>
+                            <a href="#" class="block px-4 py-2 hover:bg-gray-100"><i class="bi bi-x-circle"></i> Cancel Ticket</a>
+                            <a href="#" class="block px-4 py-2 hover:bg-gray-100"><i class="bi bi-calendar"></i> Change Travel Date</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <div class="hero-section relative min-h-[400px] flex items-center">
+        <div class="sunset"></div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full z-10">
+            <div class="bg-white rounded-lg p-6 shadow-lg max-w-4xl">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="relative">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">From</label>
+                        <input type="text" id="sourceCity" placeholder="Enter source city" class="w-full p-2 border rounded-md pl-8">
+                        <i class="bi bi-geo-alt absolute left-2 top-8 text-gray-400"></i>
+                    </div>
+                    <div class="relative">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">To</label>
+                        <input type="text" id="destCity" placeholder="Enter destination city" class="w-full p-2 border rounded-md pl-8">
+                        <i class="bi bi-geo-alt absolute left-2 top-8 text-gray-400"></i>
+                    </div>
+                    <div class="relative">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                        <input type="date" id="journeyDate" class="w-full p-2 border rounded-md">
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <button onclick="searchBuses()" class="w-full bg-red-600 text-white py-3 rounded-md font-medium hover:bg-red-700">
+                        SEARCH BUSES
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bus Search Results -->
+    <div id="searchResults" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 hidden">
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-xl font-bold mb-4">Available Buses</h3>
+            <div id="busList" class="space-y-4"></div>
+        </div>
+    </div>
+
+    <!-- Booking Form -->
+    <div id="bookingForm" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 hidden">
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-xl font-bold mb-4">Booking Details</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input type="text" placeholder="Customer Name" class="p-2 border rounded-md" id="customerName">
+                <input type="tel" placeholder="Contact Number" class="p-2 border rounded-md" id="contactNumber">
+            </div>
+            <div class="mt-4">
+                <h4 class="font-medium mb-2">Select Payment Method</h4>
+                <div class="space-x-4">
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="payment" value="cash" class="form-radio">
+                        <span class="ml-2">Cash</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="payment" value="upi" class="form-radio">
+                        <span class="ml-2">UPI</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="payment" value="card" class="form-radio">
+                        <span class="ml-2">Card</span>
+                    </label>
+                </div>
+            </div>
+            <button onclick="confirmBooking()" class="mt-4 bg-green-600 text-white px-6 py-2 rounded-md">
+                Confirm Booking
+            </button>
+        </div>
+    </div>
+
+    <!-- Admin Panel -->
+    <div id="adminPanel" class="hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-xl font-bold mb-4">Admin Panel</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="border rounded-lg p-4">
+                    <h4 class="font-medium mb-2">Bus Management</h4>
+                    <button onclick="showAddBusForm()" class="bg-blue-500 text-white px-4 py-2 rounded w-full mb-2">Add New Bus</button>
+                    <button onclick="viewAllBuses()" class="bg-gray-500 text-white px-4 py-2 rounded w-full">View All Buses</button>
+                </div>
+                <div class="border rounded-lg p-4">
+                    <h4 class="font-medium mb-2">Booking Management</h4>
+                    <button onclick="showBookings()" class="bg-green-500 text-white px-4 py-2 rounded w-full mb-2">View Bookings</button>
+                    <button onclick="generateReport()" class="bg-gray-500 text-white px-4 py-2 rounded w-full">Generate Report</button>
+                </div>
+                <div class="border rounded-lg p-4">
+                    <h4 class="font-medium mb-2">Customer Management</h4>
+                    <button onclick="viewCustomers()" class="bg-purple-500 text-white px-4 py-2 rounded w-full mb-2">View Customers</button>
+                    <button onclick="showAnalytics()" class="bg-gray-500 text-white px-4 py-2 rounded w-full">Analytics</button>
+                </div>
+            </div>
+        </div>
+    </div>
+<script>document.body.addEventListener('wheel', e => { if (!e.ctrlKey) return; e.preventDefault(); return }, { passive: false })</script>
+	</body>
+<script>
+    // Dropdown functionality
+    document.getElementById('accountDropdown').addEventListener('click', function() {
+        document.getElementById('accountMenu').classList.toggle('show');
+    });
+
+    window.onclick = function(event) {
+        if (!event.target.matches('#accountDropdown')) {
+            var dropdowns = document.getElementsByClassName("dropdown-content");
+            for (var i = 0; i < dropdowns.length; i++) {
+                var openDropdown = dropdowns[i];
+                if (openDropdown.classList.contains('show')) {
+                    openDropdown.classList.remove('show');
+                }
+            }
+        }
+    }
+
+    // Sample bus data
+    const buses = [
+        { id: 1, name: "Express Travel", type: "AC Sleeper", from: "Mumbai", to: "Delhi", departure: "22:00", arrival: "10:00", price: 1200, seats: 40 },
+        { id: 2, name: "Royal Travels", type: "Non-AC Seater", from: "Mumbai", to: "Delhi", departure: "20:00", arrival: "08:00", price: 800, seats: 45 }
+    ];
+
+    function searchBuses() {
+        const source = document.getElementById('sourceCity').value;
+        const destination = document.getElementById('destCity').value;
+        const date = document.getElementById('journeyDate').value;
+
+        if (!source || !destination || !date) {
+            alert('Please fill in all fields');
+            return;
+        }
+
+        const searchResults = document.getElementById('searchResults');
+        const busList = document.getElementById('busList');
+        busList.innerHTML = '';
+
+        buses.forEach(bus => {
+            const busElement = document.createElement('div');
+            busElement.className = 'border p-4 rounded-lg';
+            busElement.innerHTML = `
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h4 class="font-medium">${bus.name}</h4>
+                        <p class="text-sm text-gray-600">${bus.type}</p>
+                        <p class="text-sm">Departure: ${bus.departure} | Arrival: ${bus.arrival}</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-bold">₹${bus.price}</p>
+                        <p class="text-sm text-gray-600">Available Seats: ${bus.seats}</p>
+                        <button onclick="selectBus(${bus.id})" class="mt-2 bg-red-600 text-white px-4 py-1 rounded-md">Select</button>
+                    </div>
+                </div>
+            `;
+            busList.appendChild(busElement);
+        });
+
+        searchResults.classList.remove('hidden');
+    }
+
+    function selectBus(busId) {
+        document.getElementById('bookingForm').classList.remove('hidden');
+    }
+
+    function confirmBooking() {
+        const name = document.getElementById('customerName').value;
+        const contact = document.getElementById('contactNumber').value;
+        
+        if (!name || !contact) {
+            alert('Please fill in all details');
+            return;
+        }
+
+        alert('Booking confirmed! A confirmation has been sent to your contact number.');
+        // Reset form
+        document.getElementById('customerName').value = '';
+        document.getElementById('contactNumber').value = '';
+        document.getElementById('bookingForm').classList.add('hidden');
+    }
+
+    // Admin functions
+    function showAddBusForm() {
+        // Implementation for adding new bus
+        alert('Add Bus Form - To be implemented');
+    }
+
+    function viewAllBuses() {
+        // Implementation for viewing all buses
+        alert('View All Buses - To be implemented');
+    }
+
+    function showBookings() {
+        // Implementation for viewing bookings
+        alert('View Bookings - To be implemented');
+    }
+
+    function generateReport() {
+        // Implementation for generating reports
+        alert('Generate Report - To be implemented');
+    }
+
+    function viewCustomers() {
+        // Implementation for viewing customers
+        alert('View Customers - To be implemented');
+    }
+
+    function showAnalytics() {
+        // Implementation for showing analytics
+        alert('Analytics - To be implemented');
+    }
+</script>
+</html>
